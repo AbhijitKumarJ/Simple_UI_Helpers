@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html ng-app="streamlitGeneratorApp">
+
+<head>
+  <title>Streamlit Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      display: flex;
+      justify-content: space-around;
+    }
+
+    ul[dnd-list] {
+      min-height: 50px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #f8f8f8;
+      width: 300px;
+    }
+
+    ul[dnd-list] li {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 5px;
+      cursor: move;
+    }
+
+    ul[dnd-list] li.selected {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    pre {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f8f8f8;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/angular-drag-and-drop-lists/2.1.0/angular-drag-and-drop-lists.min.js"></script>
+</head>
+
+<body>
+  <div ng-controller="StreamlitGeneratorController as $ctrl">
+    <h2>Streamlit Code Generator</h2>
+    <div style="text-align: right;">
+      <button ng-click="$ctrl.generateCode()">Generate Streamlit Code</button>
+      <pre>{{ $ctrl.generatedCode }}</pre>
+    </div>
+
+    <div class="container">
+      <div class="available-components" style="max-height: 500px;overflow-y: scroll ;">
+        <h2>Available Components</h2>
+        <ul dnd-list="$ctrl.availableComponents">
+          <li ng-repeat="item in $ctrl.availableComponents" dnd-draggable="item" dnd-effect-allowed="copy"
+            dnd-copied="$ctrl.onCopy(item, 'from_toolbox')" dnd-selected="$ctrl.selected = item"
+            ng-class="{'selected': $ctrl.selected === item}">
+            {{item}}
+          </li>
+        </ul>
+      </div>
+
+      <div class="selected-components">
+        <h2>Selected Components</h2>
+        <ul dnd-list="$ctrl.selectedComponents">
+          <li ng-repeat="item in $ctrl.selectedComponents track by $index" dnd-draggable="item"
+            dnd-moved="$ctrl.selectedComponents.splice($index, 1)" dnd-effect-allowed="move"
+            dnd-selected="$ctrl.selected = item" ng-class="{'selected': $ctrl.selected === item}">
+            {{item.name}} (ID: {{item.id}})
+          </li>
+        </ul>
+      </div>
+    </div>
+
+
+  </div>
+
+  <script>
+    angular.module('streamlitGeneratorApp', ['dndLists'])
+      .controller('StreamlitGeneratorController', function ($scope) {
+        var ctrl = this;
+
+        ctrl.availableComponents = [
+          'st.title',
+          'st.header',
+          'st.text',
+          'st.button',
+          'st.checkbox',
+          'st.radio',
+          'st.selectbox',
+          'st.multiselect',
+          'st.slider',
+          'st.text_input',
+          'st.number_input',
+          'st.text_area',
+          'st.date_input',
+          'st.time_input',
+          'st.file_uploader',
+          'st.color_picker',
+          'st.image',
+          'st.video',
+          'st.audio',
+        ];
+
+        ctrl.selectedComponents = [];
+        ctrl.idCounter = 1;
+
+        ctrl.generatedCode = '';
+
+        ctrl.onCopy = function (item, source) {
+          if (source == 'from_toolbox') {
+            var newItem = {
+              id: ctrl.idCounter++,
+              name: item
+            };
+
+
+            ctrl.selectedComponents.push(newItem);
+            ctrl.selectedComponents.splice(ctrl.idCounter - 2, 1);
+            //ctrl.updateGeneratedCode();
+          }
+        };
+
+        ctrl.updateGeneratedCode = function () {
+          var code = 'import streamlit as st\n\n';
+          ctrl.selectedComponents.forEach(function (component) {
+            switch (component.name) {
+              case 'st.title':
+                code += `st.title("Your Title ${component.id}")\n`;
+                break;
+              case 'st.header':
+                code += `st.header("Your Header ${component.id}")\n`;
+                break;
+              case 'st.text':
+                code += `st.text("Your text here ${component.id}")\n`;
+                break;
+              case 'st.button':
+                code += `if st.button("Click me ${component.id}"):\n    st.write("Button ${component.id} clicked!")\n`;
+                break;
+              case 'st.checkbox':
+                code += `checkbox_${component.id} = st.checkbox("Checkbox ${component.id}")\n`;
+                break;
+              case 'st.radio':
+                code += `radio_${component.id} = st.radio("Radio ${component.id}", options=["Option 1", "Option 2", "Option 3"])\n`;
+                break;
+              case 'st.selectbox':
+                code += `selectbox_${component.id} = st.selectbox("Selectbox ${component.id}", options=["Option 1", "Option 2", "Option 3"])\n`;
+                break;
+              case 'st.multiselect':
+                code += `multiselect_${component.id} = st.multiselect("Multiselect ${component.id}", options=["Option 1", "Option 2", "Option 3"])\n`;
+                break;
+              case 'st.slider':
+                code += `slider_${component.id} = st.slider("Slider ${component.id}", min_value=0, max_value=100, value=50)\n`;
+                break;
+              case 'st.text_input':
+                code += `text_input_${component.id} = st.text_input("Text Input ${component.id}")\n`;
+                break;
+              case 'st.number_input':
+                code += `number_input_${component.id} = st.number_input("Number Input ${component.id}", min_value=0, max_value=100, value=50)\n`;
+                break;
+              case 'st.text_area':
+                code += `text_area_${component.id} = st.text_area("Text Area ${component.id}")\n`;
+                break;
+              case 'st.date_input':
+                code += `date_input_${component.id} = st.date_input("Date Input ${component.id}")\n`;
+                break;
+              case 'st.time_input':
+                code += `time_input_${component.id} = st.time_input("Time Input ${component.id}")\n`;
+                break;
+              case 'st.file_uploader':
+                code += `file_uploader_${component.id} = st.file_uploader("File Uploader ${component.id}")\n`;
+                break;
+              case 'st.color_picker':
+                code += `color_picker_${component.id} = st.color_picker("Color Picker ${component.id}")\n`;
+                break;
+              case 'st.image':
+                code += `st.image("https://example.com/image.jpg", caption="Image ${component.id}")\n`;
+                break;
+              case 'st.video':
+                code += `st.video("https://example.com/video.mp4")\n`;
+                break;
+              case 'st.audio':
+                code += `st.audio("https://example.com/audio.mp3")\n`;
+                break;
+              default:
+                code += `# TODO: Implement ${component.name} ${component.id}\n`;
+            }
+          });
+          ctrl.generatedCode = code;
+        };
+
+        ctrl.generateCode = function () {
+          ctrl.updateGeneratedCode();
+
+          // Generate Python file
+          var blob = new Blob([ctrl.generatedCode], { type: 'text/plain' });
+          var link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'streamlit_app.py';
+          link.click();
+        };
+
+        // $scope.$watch('$ctrl.selectedComponents', function(newValue, oldValue) {
+        //   if (newValue !== oldValue) {
+        //     ctrl.updateGeneratedCode();
+        //   }
+        // }, true);
+      });
+  </script>
+</body>
+
+</html>
